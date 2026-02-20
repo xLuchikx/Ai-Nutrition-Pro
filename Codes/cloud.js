@@ -1,5 +1,5 @@
 // --- cloud.js ---
-const Cloud = {
+var Cloud = {
     config: { url: "", pass: "", lastUpdate: 0 },
     saveTimeout: null,
 
