@@ -211,23 +211,60 @@ function renderMicroGrid(elId, configObj, currentVals) {
 }
 
 function renderList(items) {
-    const el = document.getElementById('foodList'); el.innerHTML = '';
+    const el = document.getElementById('foodList');
+    el.innerHTML = '';
+
+    // Группировка
+    const groups = {};
     items.forEach(item => {
-        let microStr = item.micros ? Object.entries(item.micros).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k.split(' ')[0]} ${v}`).join(', ') : '';
-        const tr = document.createElement('tr');
-        tr.className = 'clickable-row';
-        tr.onclick = (e) => {
-            if (!e.target.closest('.trash-btn') && !e.target.closest('[onclick^="editDateItem"]')) {
-                showProductDetails(item.id);
-            }
-        };
-        tr.innerHTML = `<td data-label="Дата" style="color:#2980b9; font-weight:bold" onclick="editDateItem(${item.id})">✎ ${item.date}</td>
-            <td data-label="Продукт">${item.name}</td>
-            <td data-label="Ккал">${Math.round(item.cal)}</td>
-            <td data-label="Б / Ж / У">${Math.round(item.prot)} / ${Math.round(item.fat)} / ${Math.round(item.carb)}</td>
-            <td data-label="Состав">${microStr}...</td><td><button class="trash-btn" onclick="deleteItem(${item.id})">✕</button></td>`;
-        el.appendChild(tr);
+        const type = item.mealType || 'Перекус';
+        const num = item.mealNumber || 1;
+        const key = num > 1 ? `${type} ${num}` : type;
+        if (!groups[key]) groups[key] = { items: [], totals: { cal: 0, prot: 0, fat: 0, carb: 0 } };
+        groups[key].items.push(item);
+        groups[key].totals.cal += (item.cal || 0);
+        groups[key].totals.prot += (item.prot || 0);
+        groups[key].totals.fat += (item.fat || 0);
+        groups[key].totals.carb += (item.carb || 0);
     });
+
+    // Отрисовка групп
+    for (let key in groups) {
+        const group = groups[key];
+
+        // Заголовок группы
+        const headerTr = document.createElement('tr');
+        headerTr.className = 'meal-header-row';
+        headerTr.innerHTML = `
+            <td colspan="2" style="font-weight: 800; color: #2c3e50; background: #f1f3f5;">🍴 ${key.toUpperCase()}</td>
+            <td style="font-weight: 800; background: #f1f3f5;">${Math.round(group.totals.cal)}</td>
+            <td colspan="3" style="font-size: 11px; color: #7f8c8d; background: #f1f3f5; font-weight: 600;">
+                Итог: ${Math.round(group.totals.prot)} / ${Math.round(group.totals.fat)} / ${Math.round(group.totals.carb)}
+            </td>
+        `;
+        el.appendChild(headerTr);
+
+        // Продукты в группе
+        group.items.forEach(item => {
+            const microStr = item.micros ? Object.entries(item.micros).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k.split(' ')[0]} ${v}`).join(', ') : '';
+            const tr = document.createElement('tr');
+            tr.className = 'clickable-row';
+            tr.onclick = (e) => {
+                if (!e.target.closest('.trash-btn') && !e.target.closest('[onclick^="editDateItem"]')) {
+                    showProductDetails(item.id);
+                }
+            };
+            tr.innerHTML = `
+                <td data-label="Дата" style="color:#2980b9; font-weight:bold" onclick="editDateItem(${item.id})">✎ ${item.date}</td>
+                <td data-label="Продукт">${item.name}</td>
+                <td data-label="Ккал">${Math.round(item.cal)}</td>
+                <td data-label="Б / Ж / У">${Math.round(item.prot)} / ${Math.round(item.fat)} / ${Math.round(item.carb)}</td>
+                <td data-label="Состав">${microStr}...</td>
+                <td><button class="trash-btn" onclick="deleteItem(${item.id})">✕</button></td>
+            `;
+            el.appendChild(tr);
+        });
+    }
 }
 
 function save() {
@@ -315,6 +352,14 @@ function processAiData() {
 
         const items = JSON.parse(raw.substring(start, end));
         const date = document.getElementById('aiDateInput').value || getLocalISODate();
+        const mealType = document.getElementById('mealTypeInput').value;
+
+        // Автоматически находим следующий номер для этого типа приема пищи на эту дату
+        const existingNumbers = foodLog
+            .filter(item => item.date === date && item.mealType === mealType)
+            .map(item => item.mealNumber || 1);
+        const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
+
         items.forEach(i => {
             const cleanMicros = {};
             if (i.micros) {
@@ -323,6 +368,8 @@ function processAiData() {
             foodLog.push({
                 id: Date.now() + Math.random(),
                 date,
+                mealType,
+                mealNumber: nextNumber,
                 name: i.name,
                 cal: Number(i.cal) || 0,
                 prot: Number(i.prot) || 0,

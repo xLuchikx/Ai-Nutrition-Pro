@@ -146,10 +146,23 @@
                     <h2>Добавить через AI</h2>
                     <p class="modal-hint">Скопируйте промпт, отправьте в чат, вставьте ответ JSON.</p>
 
-                    <div style="margin-bottom: 10px;">
-                        <label style="font-size: 13px; font-weight: bold; color: #555;">Дата записи:</label>
-                        <input type="date" id="aiDateInput"
-                            style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                    <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                        <div>
+                            <label style="font-size: 13px; font-weight: bold; color: #555;">Дата:</label>
+                            <input type="date" id="aiDateInput"
+                                style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 13px; font-weight: bold; color: #555;">Приём пищи:</label>
+                            <select id="mealTypeInput"
+                                style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="Завтрак">Завтрак</option>
+                                <option value="Обед">Обед</option>
+                                <option value="Полдник">Полдник</option>
+                                <option value="Ужин">Ужин</option>
+                                <option value="Перекус">Перекус</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button onclick="copyPrompt()" class="copy-btn">📋 Скопировать Промпт</button>
